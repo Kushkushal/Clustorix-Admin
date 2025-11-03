@@ -1,2 +1,2 @@
-const baseUrl = 'http://localhost:5001/api';
+const baseUrl = 'https://clustorix-admin.onrender.com/api';
 export { baseUrl }
