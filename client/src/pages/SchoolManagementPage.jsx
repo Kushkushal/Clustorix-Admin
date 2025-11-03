@@ -418,19 +418,18 @@ const SchoolManagementPage = () => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <FunnelIcon className="w-5 h-5 text-gray-400" />
+          <div className="flex items-center space-x-2 flex-shrink-0">
+            <FunnelIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+              className="w-24 sm:w-28 px-2 sm:px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
             >
               <option value="all">All</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
           </div>
-
         </div>
 
         <div className="text-xs sm:text-sm text-gray-600">
