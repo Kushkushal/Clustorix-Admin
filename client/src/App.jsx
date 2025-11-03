@@ -28,9 +28,9 @@ function App() {
             <Route path="/admin" element={<Layout />}>
               <Route index element={<DashboardPage />} />
               <Route path="schools" element={<SchoolManagementPage />} />
-              <Route path="trainer" element={<Trainer />} />
-              <Route path="subscription" element={<Subscription />} />
-              <Route path="ticket" element={<Ticket />} />
+              <Route path="trainers" element={<Trainer />} />
+              <Route path="subscriptions" element={<Subscription />} />
+              <Route path="tickets" element={<Ticket />} />
               <Route path="settings" element={<Settings />} />
 
               {/* <Route path="schools/:id" element={<SchoolDetailsPage />} /> */}

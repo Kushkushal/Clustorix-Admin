@@ -20,7 +20,7 @@ import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 const SchoolManagementPage = () => {
   const { api } = useAuth(); // Get authenticated api instance
-  
+
   const [schools, setSchools] = useState([]);
   const [filteredSchools, setFilteredSchools] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,17 +51,17 @@ const SchoolManagementPage = () => {
     try {
       setLoading(true);
       console.log('🏫 Fetching schools...');
-      
+
       // Use authenticated api instance
       const { data } = await api.get('/v1/schools');
-      
+
       console.log('✅ Schools fetched:', data.data?.length || 0);
       setSchools(data.data);
       setFilteredSchools(data.data);
       setError(null);
     } catch (err) {
       console.error('❌ Error fetching schools:', err);
-      
+
       if (err.response?.status === 401) {
         setError('Session expired. Please log in again.');
         setTimeout(() => window.location.href = '/login', 2000);
@@ -79,7 +79,7 @@ const SchoolManagementPage = () => {
     setLoadingStats(true);
     try {
       const { data } = await api.get(`/v1/students/school/${schoolId}`);
-      
+
       setSchoolStats({
         students: data.count || 0,
         teachers: 25
@@ -117,7 +117,7 @@ const SchoolManagementPage = () => {
 
     try {
       console.log('🔄 Updating school status...');
-      
+
       const { data } = await api.put(
         `/v1/schools/${statusModal.school._id}`,
         { isActive: statusModal.newStatus }
@@ -146,7 +146,7 @@ const SchoolManagementPage = () => {
 
     try {
       console.log('🗑️ Deleting school...');
-      
+
       const { data } = await api.delete(`/v1/schools/${deleteModal.school._id}`);
 
       if (data.success) {
@@ -423,13 +423,14 @@ const SchoolManagementPage = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-             className="w-auto px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-36 px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="all">All Status</option>
               <option value="active">Active Only</option>
               <option value="inactive">Inactive Only</option>
             </select>
           </div>
+
         </div>
 
         <div className="text-xs sm:text-sm text-gray-600">
