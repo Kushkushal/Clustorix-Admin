@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Bars3Icon,
   BellIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import Sidebar from './Sidebar';
 
@@ -12,9 +13,11 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogoutConfirm = async () => {
     await logout();
+    setShowLogoutModal(false);
     navigate('/login');
   };
 
@@ -28,14 +31,15 @@ export default function Layout() {
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-64' : 'ml-0'
-          }`}
+        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
+          sidebarOpen ? 'ml-64' : 'ml-0'
+        }`}
       >
         {/* Top Navigation Bar */}
         <header className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              {/* Left: Menu button (visible on all screen sizes now) */}
+              {/* Left: Menu button */}
               <div className="flex items-center">
                 <button
                   onClick={toggleSidebar}
@@ -45,13 +49,13 @@ export default function Layout() {
                   <Bars3Icon className="w-6 h-6" />
                 </button>
 
-                {/* Page title (optional on mobile only) */}
+                {/* Page title (optional on mobile) */}
                 <h1 className="ml-3 text-lg font-semibold text-gray-900 lg:hidden">
                   Clustorix Admin
                 </h1>
               </div>
 
-              {/* Right: User info, notifications, and logout */}
+              {/* Right: Notifications, User info, Logout */}
               <div className="flex items-center space-x-4">
                 {/* Notifications */}
                 <button
@@ -59,11 +63,10 @@ export default function Layout() {
                   aria-label="Notifications"
                 >
                   <BellIcon className="w-6 h-6" />
-                  {/* Notification badge */}
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                 </button>
 
-                {/* User info (hidden on mobile) */}
+                {/* User info */}
                 {user && (
                   <div className="hidden md:flex items-center space-x-3">
                     <div className="text-right">
@@ -80,7 +83,7 @@ export default function Layout() {
 
                 {/* Logout button */}
                 <button
-                  onClick={handleLogout}
+                  onClick={() => setShowLogoutModal(true)}
                   className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150"
                   aria-label="Logout"
                 >
@@ -92,22 +95,60 @@ export default function Layout() {
           </div>
         </header>
 
-        {/* Page Content - This will grow to fill available space */}
+        {/* Page Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
         </main>
 
+        {/* Footer */}
         <footer className="border-t border-gray-200 bg-black mt-auto rounded-t-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
-              <p className="text-sm text-white">© {new Date().getFullYear()} Clustorix Admin Portal. All rights reserved.</p>
+            <div className="flex justify-center items-center">
+              <p className="text-sm text-white text-center">
+                © {new Date().getFullYear()} Clustorix Admin Portal. All rights reserved.
+              </p>
             </div>
           </div>
         </footer>
 
-
+        {/* Logout Confirmation Modal */}
+        {showLogoutModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                  Confirm Logout
+                </h3>
+                <button
+                  onClick={() => setShowLogoutModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="Close logout modal"
+                >
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
+              <p className="text-sm sm:text-base text-gray-600 mb-6">
+                Are you sure you want to logout?
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => setShowLogoutModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLogoutConfirm}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
