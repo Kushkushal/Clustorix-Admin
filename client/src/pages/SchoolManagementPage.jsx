@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import {
   MagnifyingGlassIcon,
   AcademicCapIcon,
@@ -17,9 +16,11 @@ import {
   ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 import { FaGraduationCap } from 'react-icons/fa';
-import { baseUrl } from '../../../client/src/environment';
+import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 const SchoolManagementPage = () => {
+  const { api } = useAuth(); // Get authenticated api instance
+  
   const [schools, setSchools] = useState([]);
   const [filteredSchools, setFilteredSchools] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,15 +49,27 @@ const SchoolManagementPage = () => {
 
   const fetchSchools = async () => {
     try {
-      const { data } = await axios.get(`${baseUrl}/v1/schools`, {
-        withCredentials: true
-      });
-      console.log('Schools fetched:', data);
+      setLoading(true);
+      console.log('🏫 Fetching schools...');
+      
+      // Use authenticated api instance
+      const { data } = await api.get('/v1/schools');
+      
+      console.log('✅ Schools fetched:', data.data?.length || 0);
       setSchools(data.data);
       setFilteredSchools(data.data);
+      setError(null);
     } catch (err) {
-      console.error('Error fetching schools:', err);
-      setError('Failed to fetch schools');
+      console.error('❌ Error fetching schools:', err);
+      
+      if (err.response?.status === 401) {
+        setError('Session expired. Please log in again.');
+        setTimeout(() => window.location.href = '/login', 2000);
+      } else if (err.response?.status === 403) {
+        setError('You do not have permission to view schools.');
+      } else {
+        setError(err.response?.data?.message || 'Failed to fetch schools');
+      }
     } finally {
       setLoading(false);
     }
@@ -65,10 +78,7 @@ const SchoolManagementPage = () => {
   const fetchSchoolStats = async (schoolId) => {
     setLoadingStats(true);
     try {
-      const { data } = await axios.get(
-        `${baseUrl}/v1/students/school/${schoolId}`,
-        { withCredentials: true }
-      );
+      const { data } = await api.get(`/v1/students/school/${schoolId}`);
       
       setSchoolStats({
         students: data.count || 0,
@@ -106,13 +116,15 @@ const SchoolManagementPage = () => {
     if (!statusModal.school) return;
 
     try {
-      const { data } = await axios.put(
-        `${baseUrl}/v1/schools/${statusModal.school._id}`,
-        { isActive: statusModal.newStatus },
-        { withCredentials: true }
+      console.log('🔄 Updating school status...');
+      
+      const { data } = await api.put(
+        `/v1/schools/${statusModal.school._id}`,
+        { isActive: statusModal.newStatus }
       );
 
       if (data.success) {
+        console.log('✅ School status updated');
         setSchools(schools.map(school =>
           school._id === statusModal.school._id
             ? { ...school, isActive: statusModal.newStatus }
@@ -124,8 +136,8 @@ const SchoolManagementPage = () => {
         setStatusModal({ show: false, school: null, newStatus: false });
       }
     } catch (err) {
-      console.error('Error updating school:', err);
-      alert('Failed to update school status');
+      console.error('❌ Error updating school:', err);
+      alert(err.response?.data?.message || 'Failed to update school status');
     }
   };
 
@@ -133,12 +145,12 @@ const SchoolManagementPage = () => {
     if (!deleteModal.school) return;
 
     try {
-      const { data } = await axios.delete(
-        `${baseUrl}/v1/schools/${deleteModal.school._id}`,
-        { withCredentials: true }
-      );
+      console.log('🗑️ Deleting school...');
+      
+      const { data } = await api.delete(`/v1/schools/${deleteModal.school._id}`);
 
       if (data.success) {
+        console.log('✅ School deleted');
         setSchools(schools.filter(s => s._id !== deleteModal.school._id));
         setDeleteModal({ show: false, school: null });
         if (viewSchool && viewSchool._id === deleteModal.school._id) {
@@ -146,8 +158,8 @@ const SchoolManagementPage = () => {
         }
       }
     } catch (err) {
-      console.error('Error deleting school:', err);
-      alert('Failed to delete school');
+      console.error('❌ Error deleting school:', err);
+      alert(err.response?.data?.message || 'Failed to delete school');
     }
   };
 
@@ -356,7 +368,13 @@ const SchoolManagementPage = () => {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <p className="text-red-600">{error}</p>
+        <p className="text-red-600 font-semibold">{error}</p>
+        <button
+          onClick={fetchSchools}
+          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+        >
+          Retry
+        </button>
       </div>
     );
   }
