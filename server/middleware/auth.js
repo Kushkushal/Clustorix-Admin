@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const protect = (req, res, next) => {
+const protect = async (req, res, next) => {
   let token;
 
   // Check cookie first
@@ -22,13 +22,32 @@ const protect = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;  // or fetch user from DB if needed
+    
+    // Handle default admin (no DB lookup needed)
+    if (decoded.id === 'default-admin-id') {
+      req.user = {
+        _id: 'default-admin-id',
+        id: 'default-admin-id',
+        name: 'Super Admin',
+        email: process.env.DEFAULT_ADMIN_EMAIL,
+        role: 'SuperAdmin',
+      };
+      return next();
+    }
+    
+    // For regular users, fetch from DB
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'User not found' });
+    }
+    
+    req.user = user;
     next();
   } catch (err) {
+    console.error('Token verification failed:', err.message);
     return res.status(401).json({ success: false, message: 'Not authorized, token failed' });
   }
 };
-
 
 const authorize = (...roles) => {
     return (req, res, next) => {

@@ -22,8 +22,9 @@ const sendTokenResponse = (user, statusCode, res) => {
     const options = {
         expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax', // Changed from 'strict' to 'lax' for cross-origin with credentials
+        secure: true, // ALWAYS true in production
+        sameSite: 'none', // CRITICAL: Changed from 'lax' to 'none' for cross-origin
+        path: '/', // Explicitly set path
     };
 
     res.status(statusCode).cookie('token', token, options).json({
@@ -108,17 +109,17 @@ exports.login = async (req, res, next) => {
     }
 };
 
-
 // @desc    Log user out / clear cookie
 // @route   GET /api/v1/auth/logout
 // @access  Private
 exports.logout = (req, res, next) => {
-    // Clear the cookie properly
+    // Clear the cookie properly with same settings as when set
     res.cookie('token', 'none', {
         expires: new Date(Date.now() + 1 * 1000), // Expire immediately
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: true,
+        sameSite: 'none',
+        path: '/',
     });
 
     res.status(200).json({

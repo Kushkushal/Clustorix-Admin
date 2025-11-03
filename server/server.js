@@ -36,9 +36,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 const corsOptions = {
-  origin: 'https://clustorix-admin-frontend.onrender.com',  // frontend URL
+  origin: 'https://clustorix-admin-frontend.onrender.com',
   credentials: true,
-  exposedHeaders: 'Authorization',
+  exposedHeaders: ['Authorization', 'Set-Cookie'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 };
 
 app.use(cors(corsOptions));
