@@ -4,26 +4,25 @@ const User = require('../models/User');
 const protect = async (req, res, next) => {
   let token;
 
-  // Check cookie first
-  if (req.cookies && req.cookies.token) {
-    token = req.cookies.token;
-  } 
-  // Alternatively, check Authorization header
-  else if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
+  // Check Authorization header FIRST (for cross-domain)
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
+  }
+  // Fallback to cookie
+  else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
   }
 
   if (!token) {
-    return res.status(401).json({ success: false, message: 'Not authorized, no token' });
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Not authorized, no token' 
+    });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Handle default admin (no DB lookup needed)
     if (decoded.id === 'default-admin-id') {
       req.user = {
         _id: 'default-admin-id',
@@ -35,17 +34,21 @@ const protect = async (req, res, next) => {
       return next();
     }
     
-    // For regular users, fetch from DB
     const user = await User.findById(decoded.id).select('-password');
     if (!user) {
-      return res.status(401).json({ success: false, message: 'User not found' });
+      return res.status(401).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
     }
     
     req.user = user;
     next();
   } catch (err) {
-    console.error('Token verification failed:', err.message);
-    return res.status(401).json({ success: false, message: 'Not authorized, token failed' });
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Not authorized, token failed'
+    });
   }
 };
 
