@@ -36,9 +36,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors({
-  origin: "https://clustorix-admin-frontend.onrender.com", // React dev server
+  origin: 'https://clustorix-admin-frontend.onrender.com',
   credentials: true,
 }));
+
 
 // --- Connect to DB and Start Server ---
 connectDB().then(() => {
