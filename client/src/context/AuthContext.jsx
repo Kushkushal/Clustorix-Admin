@@ -24,6 +24,9 @@ api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('Adding token to request:', token.substring(0, 20) + '...');
+    } else {
+        console.log('No token found in localStorage');
     }
     return config;
 });
@@ -34,7 +37,6 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    // Check if user is authenticated on app load
     useEffect(() => {
         checkAuth();
     }, []);
@@ -42,6 +44,7 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
         try {
             const token = localStorage.getItem('token');
+            console.log('Checking auth, token exists:', !!token);
             
             if (!token) {
                 setUser(null);
@@ -51,6 +54,7 @@ export const AuthProvider = ({ children }) => {
             }
 
             const response = await api.get('/v1/auth/me');
+            console.log('Auth check response:', response.data);
 
             if (response.data.success) {
                 setUser(response.data.data);
@@ -62,7 +66,7 @@ export const AuthProvider = ({ children }) => {
                 localStorage.removeItem('user');
             }
         } catch (error) {
-            // Suppress only 401 errors from console
+            console.log('Auth check error:', error.response?.status, error.message);
             if (error.response?.status === 401) {
                 setUser(null);
                 setIsAuthenticated(false);
@@ -78,7 +82,6 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            // Clear old session first
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             
@@ -88,7 +91,6 @@ export const AuthProvider = ({ children }) => {
             });
 
             if (response.data.success) {
-                // Store token from response
                 const token = response.data.token;
                 localStorage.setItem('token', token);
                 localStorage.setItem('user', JSON.stringify(response.data.user));

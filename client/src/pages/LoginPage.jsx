@@ -19,8 +19,15 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // Clear any existing tokens first
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Logout to clear any existing session
       await axios.get(`${baseUrl}/v1/auth/logout`, { withCredentials: true }).catch(() => {});
       await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Login
       const response = await axios.post(
         `${baseUrl}/v1/auth/login`,
         { email, password },
@@ -28,19 +35,38 @@ export default function LoginPage() {
       );
 
       if (response.data.success) {
+        console.log('Login successful:', response.data);
+        
+        // IMPORTANT: Store BOTH token and user
+        const token = response.data.token;
+        
+        if (!token) {
+          throw new Error('No token received from server');
+        }
+        
+        localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        console.log('Token stored:', localStorage.getItem('token'));
+        console.log('User stored:', localStorage.getItem('user'));
+        
+        // Wait a bit for localStorage to sync
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Check auth and navigate
         await checkAuth();
         navigate('/admin');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      console.error('Login error:', err);
+      setError(err.response?.data?.message || err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen  flex items-center justify-center px-4">
+    <div className="relative min-h-screen flex items-center justify-center px-4">
       {/* Background decorative elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
