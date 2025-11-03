@@ -35,8 +35,21 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+const allowedOrigins = [
+  'https://clustorix-admin-frontend.onrender.com',
+  'https://admin.clustorix.com',
+  'https://www.admin.clustorix.com' // Add any variants you use
+];
+
 const corsOptions = {
-  origin: 'https://clustorix-admin-frontend.onrender.com',
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // allow non-browser requests
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   exposedHeaders: ['Authorization', 'Set-Cookie'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -44,6 +57,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
 
 
 
