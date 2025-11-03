@@ -30,14 +30,19 @@ const connectDB = async () => {
 
 // --- App Initialization ---
 const app = express();
-const corsOptions = {exposedHeaders:"Authorization"}
 
 // --- Middleware ---
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+const corsOptions = {
+  origin: 'https://clustorix-admin-frontend.onrender.com',  // frontend URL
+  credentials: true,
+  exposedHeaders: 'Authorization',
+};
 
 app.use(cors(corsOptions));
+
 
 
 // --- Connect to DB and Start Server ---
