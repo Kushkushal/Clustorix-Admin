@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import {
   AcademicCapIcon,
   UsersIcon,
@@ -8,9 +7,11 @@ import {
   ArrowTrendingDownIcon
 } from '@heroicons/react/24/outline';
 import { FaHome } from 'react-icons/fa';
-import { baseUrl } from '../../../client/src/environment';
+import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 const DashboardPage = () => {
+  const { api } = useAuth(); // Get authenticated axios instance
+  
   const [stats, setStats] = useState({
     totalSchools: 0,
     activeSchools: 0,
@@ -27,16 +28,15 @@ const DashboardPage = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      console.log('📊 Fetching dashboard data...');
       
-      // Fetch Schools
-      const schoolsResponse = await axios.get(`${baseUrl}/v1/schools`, {
-        withCredentials: true
-      });
-      
-      // Fetch Students
-      const studentsResponse = await axios.get(`${baseUrl}/v1/students`, {
-        withCredentials: true
-      });
+      // Use the authenticated api instance from AuthContext
+      // This automatically includes the Authorization header with token
+      const schoolsResponse = await api.get('/v1/schools');
+      const studentsResponse = await api.get('/v1/students');
+
+      console.log('✅ Schools fetched:', schoolsResponse.data.data?.length || 0);
+      console.log('✅ Students fetched:', studentsResponse.data.data?.length || 0);
 
       const schools = schoolsResponse.data.data || [];
       const students = studentsResponse.data.data || [];
@@ -45,13 +45,24 @@ const DashboardPage = () => {
         totalSchools: schools.length,
         activeSchools: schools.filter(s => s.isActive).length,
         totalStudents: students.length,
-        totalTeachers: 25, // Mock data - will be replaced when teacher API is ready
+        totalTeachers: 25,
       });
 
       setError(null);
     } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data');
+      console.error('❌ Error fetching dashboard data:', err);
+      
+      if (err.response?.status === 401) {
+        setError('Session expired. Please log in again.');
+        // Token is already removed by interceptor
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+      } else if (err.response?.status === 403) {
+        setError('You do not have permission to access this data.');
+      } else {
+        setError(err.response?.data?.message || 'Failed to load dashboard data');
+      }
     } finally {
       setLoading(false);
     }
@@ -71,7 +82,7 @@ const DashboardPage = () => {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <p className="text-red-600">{error}</p>
+        <p className="text-red-600 font-semibold">{error}</p>
         <button
           onClick={fetchDashboardData}
           className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
@@ -120,11 +131,11 @@ const DashboardPage = () => {
       {/* Header */}
       <div className="text-center">
         <div className="flex items-center justify-center space-x-3">
-                  <FaHome className="text-3xl text-gray-700" />
-                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-0.5">
-                    School Management
-                  </h1>
-                </div>
+          <FaHome className="text-3xl text-gray-700" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-0.5">
+            School Management
+          </h1>
+        </div>
         <p className="text-gray-600 text-sm sm:text-base">
           Welcome back! Here's what's happening with your institution.
         </p>
@@ -205,60 +216,7 @@ const DashboardPage = () => {
             </div>
           </div>
         </div>
-
-        {/* <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Avg Students/School</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {stats.totalSchools > 0 
-                  ? Math.round(stats.totalStudents / stats.totalSchools)
-                  : 0
-                }
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <UsersIcon className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div> */}
-
-        {/* <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Student-Teacher Ratio</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {stats.totalTeachers > 0
-                  ? `${Math.round(stats.totalStudents / stats.totalTeachers)}:1`
-                  : 'N/A'
-                }
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-              <UserGroupIcon className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div> */}
       </div>
-
-      {/* Recent Activity Section */}
-      {/* <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <button className="flex items-center space-x-3 p-4 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
-            <AcademicCapIcon className="w-6 h-6 text-indigo-600" />
-            <span className="font-medium text-indigo-600">View All Schools</span>
-          </button>
-          <button className="flex items-center space-x-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition">
-            <UsersIcon className="w-6 h-6 text-blue-600" />
-            <span className="font-medium text-blue-600">View All Students</span>
-          </button>
-          <button className="flex items-center space-x-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition">
-            <UserGroupIcon className="w-6 h-6 text-green-600" />
-            <span className="font-medium text-green-600">View All Teachers</span>
-          </button>
-        </div>
-      </div> */}
     </div>
   );
 };
