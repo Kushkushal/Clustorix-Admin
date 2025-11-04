@@ -31,9 +31,8 @@ export default function Layout() {
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
-          sidebarOpen ? 'ml-64' : 'ml-0'
-        }`}
+        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-64' : 'ml-0'
+          }`}
       >
         {/* Top Navigation Bar */}
         <header className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
@@ -115,33 +114,33 @@ export default function Layout() {
 
         {/* Logout Confirmation Modal */}
         {showLogoutModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-md w-full p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-fadeIn">
+              <div className="flex items-center justify-center mb-5 relative">
+                <h3 className="text-xl font-semibold text-gray-900 text-center w-full">
                   Confirm Logout
                 </h3>
                 <button
                   onClick={() => setShowLogoutModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="absolute right-0 top-0 text-gray-400 hover:text-gray-700 transition-colors rounded-full p-1 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
                   aria-label="Close logout modal"
                 >
                   <XMarkIcon className="w-6 h-6" />
                 </button>
               </div>
-              <p className="text-sm sm:text-base text-gray-600 mb-6">
+              <p className="text-base text-gray-700 mb-6 leading-relaxed text-center">
                 Are you sure you want to logout?
               </p>
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={() => setShowLogoutModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium"
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleLogoutConfirm}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   Logout
                 </button>
@@ -149,6 +148,7 @@ export default function Layout() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
