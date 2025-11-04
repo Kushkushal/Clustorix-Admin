@@ -1,21 +1,19 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
 const protect = async (req, res, next) => {
   let token;
 
-  // Priority 1: Check Authorization header (for localStorage-based auth)
+  // Priority 1: Check Authorization header
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
     console.log('🔐 Token from Authorization header');
   }
-  // Priority 2: Check cookies (fallback for cookie-based auth)
+  // Priority 2: Check cookies
   else if (req.cookies && req.cookies.token) {
     token = req.cookies.token;
     console.log('🔐 Token from cookie');
   }
 
-  // No token found
   if (!token) {
     console.log('❌ No token provided');
     return res.status(401).json({ 
@@ -25,11 +23,10 @@ const protect = async (req, res, next) => {
   }
 
   try {
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('✅ Token decoded, user ID:', decoded.id);
     
-    // Handle default admin (from env variables)
+    // Only handle default admin (no database lookup needed)
     if (decoded.id === 'default-admin-id') {
       req.user = {
         _id: 'default-admin-id',
@@ -42,25 +39,16 @@ const protect = async (req, res, next) => {
       return next();
     }
     
-    // Handle database users
-    const user = await User.findById(decoded.id).select('-password');
-    
-    if (!user) {
-      console.log('❌ User not found in database for ID:', decoded.id);
-      return res.status(401).json({ 
-        success: false, 
-        message: 'User not found - Token may be invalid' 
-      });
-    }
-    
-    req.user = user;
-    console.log('✅ User authenticated:', user.email, '| Role:', user.role);
-    next();
+    // If token has different ID, it's invalid
+    console.log('❌ Invalid user ID in token:', decoded.id);
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Invalid token - User not authorized' 
+    });
     
   } catch (err) {
     console.error('❌ Token verification failed:', err.message);
     
-    // Provide specific error messages
     let message = 'Not authorized - Invalid token';
     
     if (err.name === 'JsonWebTokenError') {
