@@ -75,11 +75,13 @@ connectDB().then(() => {
   const schoolRoutes = require("./routes/schoolRoutes");
   const studentRoutes = require("./routes/studentRoutes");
   const teacherRoutes = require("./routes/teacherRoutes");
+  const statsRoutes = require("./routes/statsRoutes");
 
   app.use("/api/v1/auth", authRoutes);
   app.use("/api/v1/schools", schoolRoutes);
   app.use("/api/v1/students", studentRoutes);
   app.use("/api/v1/teachers", teacherRoutes);
+  app.use("/api/v1/stats", statsRoutes);
   
   // Health check endpoint
   app.get("/", (req, res) => {

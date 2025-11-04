@@ -4,13 +4,14 @@ import {
   UsersIcon,
   UserGroupIcon,
   ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon
+  ArrowTrendingDownIcon,
+  CircleStackIcon
 } from '@heroicons/react/24/outline';
-import { FaHome } from 'react-icons/fa';
-import { useAuth } from '../context/AuthContext'; // Import useAuth
+import { FaHome, FaDatabase } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
 
 const DashboardPage = () => {
-  const { api } = useAuth(); // Get authenticated axios instance
+  const { api } = useAuth();
   
   const [stats, setStats] = useState({
     totalSchools: 0,
@@ -18,6 +19,17 @@ const DashboardPage = () => {
     totalStudents: 0,
     totalTeachers: 0,
   });
+  
+  const [dbStats, setDbStats] = useState({
+    dataSize: 0,
+    totalSize: 0,
+    maxStorage: 0,
+    usedPercentage: 0,
+    freePercentage: 100,
+    collections: 0,
+    objects: 0
+  });
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -25,26 +37,35 @@ const DashboardPage = () => {
     fetchDashboardData();
   }, []);
 
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  };
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       console.log('📊 Fetching dashboard data...');
       
-      // Use the authenticated api instance from AuthContext
-      // This automatically includes the Authorization header with token
-      const [schoolsResponse, studentsResponse, teachersResponse] = await Promise.all([
+      const [schoolsResponse, studentsResponse, teachersResponse, dbStatsResponse] = await Promise.all([
         api.get('/v1/schools'),
         api.get('/v1/students'),
-        api.get('/v1/teachers')
+        api.get('/v1/teachers'),
+        api.get('/v1/stats/db-stats')
       ]);
 
       console.log('✅ Schools fetched:', schoolsResponse.data.data?.length || 0);
       console.log('✅ Students fetched:', studentsResponse.data.data?.length || 0);
       console.log('✅ Teachers fetched:', teachersResponse.data.data?.length || 0);
+      console.log('✅ DB Stats fetched:', dbStatsResponse.data.data);
 
       const schools = schoolsResponse.data.data || [];
       const students = studentsResponse.data.data || [];
       const teachers = teachersResponse.data.data || [];
+      const dbData = dbStatsResponse.data.data || {};
 
       setStats({
         totalSchools: schools.length,
@@ -53,13 +74,13 @@ const DashboardPage = () => {
         totalTeachers: teachers.length,
       });
 
+      setDbStats(dbData);
       setError(null);
     } catch (err) {
       console.error('❌ Error fetching dashboard data:', err);
       
       if (err.response?.status === 401) {
         setError('Session expired. Please log in again.');
-        // Token is already removed by interceptor
         setTimeout(() => {
           window.location.href = '/login';
         }, 2000);
@@ -128,6 +149,16 @@ const DashboardPage = () => {
       bgGradient: 'from-green-500 to-green-600',
       trend: stats.totalTeachers > 0 ? '+5%' : null,
       trendUp: true
+    },
+    {
+      title: 'Database Storage',
+      value: formatBytes(dbStats.totalSize),
+      subtitle: `${dbStats.usedPercentage}% used`,
+      icon: CircleStackIcon,
+      color: 'purple',
+      bgGradient: 'from-purple-500 to-purple-600',
+      trend: null,
+      trendUp: true
     }
   ];
 
@@ -147,7 +178,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {cards.map((card, index) => (
           <div
             key={index}
@@ -164,8 +195,8 @@ const DashboardPage = () => {
                     <p className="text-white text-opacity-90 text-sm font-medium">
                       {card.title}
                     </p>
-                    <h3 className="text-3xl sm:text-4xl font-bold text-white mt-1">
-                      {card.value.toLocaleString()}
+                    <h3 className="text-2xl sm:text-3xl font-bold text-white mt-1">
+                      {typeof card.value === 'number' ? card.value.toLocaleString() : card.value}
                     </h3>
                   </div>
                 </div>
@@ -192,6 +223,66 @@ const DashboardPage = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Detailed Storage Stats */}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <FaDatabase className="text-2xl text-purple-600" />
+          <h2 className="text-xl font-bold text-gray-900">Database Storage Details</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+            <p className="text-sm text-blue-600 font-medium mb-1">Total Used</p>
+            <p className="text-2xl font-bold text-blue-900">{formatBytes(dbStats.totalSize)}</p>
+            <p className="text-xs text-blue-600 mt-1">{dbStats.usedPercentage}% of quota</p>
+          </div>
+          
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+            <p className="text-sm text-green-600 font-medium mb-1">Available</p>
+            <p className="text-2xl font-bold text-green-900">
+              {formatBytes(dbStats.maxStorage - dbStats.totalSize)}
+            </p>
+            <p className="text-xs text-green-600 mt-1">{dbStats.freePercentage}% free</p>
+          </div>
+          
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-4">
+            <p className="text-sm text-amber-600 font-medium mb-1">Collections</p>
+            <p className="text-2xl font-bold text-amber-900">{dbStats.collections}</p>
+            <p className="text-xs text-amber-600 mt-1">Database tables</p>
+          </div>
+          
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
+            <p className="text-sm text-purple-600 font-medium mb-1">Total Records</p>
+            <p className="text-2xl font-bold text-purple-900">{dbStats.objects?.toLocaleString()}</p>
+            <p className="text-xs text-purple-600 mt-1">Across all collections</p>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mt-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-gray-700">Storage Usage</span>
+            <span className="text-sm font-medium text-gray-700">{dbStats.usedPercentage}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                parseFloat(dbStats.usedPercentage) > 80
+                  ? 'bg-red-500'
+                  : parseFloat(dbStats.usedPercentage) > 60
+                  ? 'bg-yellow-500'
+                  : 'bg-green-500'
+              }`}
+              style={{ width: `${dbStats.usedPercentage}%` }}
+            ></div>
+          </div>
+          <div className="flex justify-between mt-1">
+            <span className="text-xs text-gray-500">{formatBytes(dbStats.totalSize)}</span>
+            <span className="text-xs text-gray-500">{formatBytes(dbStats.maxStorage)}</span>
+          </div>
+        </div>
       </div>
 
       {/* Quick Stats Grid */}
