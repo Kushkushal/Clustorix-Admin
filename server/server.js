@@ -42,7 +42,7 @@ app.use(cookieParser());
 const allowedOrigins = [
   // 'http://localhost:5173',           // Vite dev
   // 'http://localhost:3000',           // React dev
-  // 'http://localhost:5174',           // Alternative port
+  // 'http://localhost:5174', // Alternative port
   'https://clustorix-admin-frontend.onrender.com',
   'https://admin.clustorix.com',
   'https://www.admin.clustorix.com'
