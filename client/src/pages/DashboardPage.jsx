@@ -12,14 +12,15 @@ import { useAuth } from '../context/AuthContext';
 
 const DashboardPage = () => {
   const { api } = useAuth();
-  
+
   const [stats, setStats] = useState({
     totalSchools: 0,
     activeSchools: 0,
     totalStudents: 0,
     totalTeachers: 0,
+    totalFees: 0,
   });
-  
+
   const [dbStats, setDbStats] = useState({
     dataSize: 0,
     totalSize: 0,
@@ -29,13 +30,41 @@ const DashboardPage = () => {
     collections: 0,
     objects: 0
   });
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // Indian Currency Formatter - Converts to K, L, Cr format
+  const formatIndianCurrency = (amount) => {
+    if (!amount || amount === 0) return '₹0';
+    
+    const absAmount = Math.abs(amount);
+    
+    // 1 Crore = 10,000,000
+    if (absAmount >= 10000000) {
+      const crores = (absAmount / 10000000).toFixed(2);
+      return `₹${crores} Cr`;
+    }
+    
+    // 1 Lakh = 100,000
+    if (absAmount >= 100000) {
+      const lakhs = (absAmount / 100000).toFixed(2);
+      return `₹${lakhs} L`;
+    }
+    
+    // 1 Thousand = 1,000
+    if (absAmount >= 1000) {
+      const thousands = (absAmount / 1000).toFixed(2);
+      return `₹${thousands} K`;
+    }
+    
+    // Less than 1000
+    return `₹${absAmount.toLocaleString('en-IN')}`;
+  };
 
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 Bytes';
@@ -49,36 +78,46 @@ const DashboardPage = () => {
     try {
       setLoading(true);
       console.log('📊 Fetching dashboard data...');
-      
-      const [schoolsResponse, studentsResponse, teachersResponse, dbStatsResponse] = await Promise.all([
+
+      const [
+        schoolsResponse,
+        studentsResponse,
+        teachersResponse,
+        dbStatsResponse,
+        feesStatsResponse,
+      ] = await Promise.all([
         api.get('/v1/schools'),
         api.get('/v1/students'),
         api.get('/v1/teachers'),
-        api.get('/v1/stats/db-stats')
+        api.get('/v1/stats/db-stats'),
+        api.get('/v1/fees/stats/summary'),
       ]);
 
       console.log('✅ Schools fetched:', schoolsResponse.data.data?.length || 0);
       console.log('✅ Students fetched:', studentsResponse.data.data?.length || 0);
       console.log('✅ Teachers fetched:', teachersResponse.data.data?.length || 0);
       console.log('✅ DB Stats fetched:', dbStatsResponse.data.data);
+      console.log('✅ Fees stats fetched:', feesStatsResponse.data.data);
 
       const schools = schoolsResponse.data.data || [];
       const students = studentsResponse.data.data || [];
       const teachers = teachersResponse.data.data || [];
       const dbData = dbStatsResponse.data.data || {};
+      const feesStats = feesStatsResponse.data.data || {};
 
       setStats({
         totalSchools: schools.length,
         activeSchools: schools.filter(s => s.isActive).length,
         totalStudents: students.length,
         totalTeachers: teachers.length,
+        totalFees: feesStats.totalFeesAmount || 0,
       });
 
       setDbStats(dbData);
       setError(null);
     } catch (err) {
       console.error('❌ Error fetching dashboard data:', err);
-      
+
       if (err.response?.status === 401) {
         setError('Session expired. Please log in again.');
         setTimeout(() => {
@@ -151,6 +190,17 @@ const DashboardPage = () => {
       trendUp: true
     },
     {
+      title: 'Total Fees',
+      value: stats.totalFees,
+      subtitle: 'Sum of all fees',
+      icon: AcademicCapIcon,
+      color: 'yellow',
+      bgGradient: 'from-yellow-500 to-yellow-600',
+      trend: stats.totalFees > 0 ? '+10%' : null,
+      trendUp: true,
+      isCurrency: true
+    },
+    {
       title: 'Database Storage',
       value: formatBytes(dbStats.totalSize),
       subtitle: `${dbStats.usedPercentage}% used`,
@@ -178,7 +228,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
         {cards.map((card, index) => (
           <div
             key={index}
@@ -196,7 +246,11 @@ const DashboardPage = () => {
                       {card.title}
                     </p>
                     <h3 className="text-2xl sm:text-3xl font-bold text-white mt-1">
-                      {typeof card.value === 'number' ? card.value.toLocaleString() : card.value}
+                      {card.isCurrency
+                        ? formatIndianCurrency(card.value)
+                        : typeof card.value === 'number'
+                          ? card.value.toLocaleString()
+                          : card.value}
                     </h3>
                   </div>
                 </div>
@@ -208,9 +262,11 @@ const DashboardPage = () => {
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-600">{card.subtitle}</p>
                 {card.trend && (
-                  <div className={`flex items-center space-x-1 text-sm font-medium ${
-                    card.trendUp ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <div
+                    className={`flex items-center space-x-1 text-sm font-medium ${
+                      card.trendUp ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
                     {card.trendUp ? (
                       <ArrowTrendingUpIcon className="w-4 h-4" />
                     ) : (
@@ -231,14 +287,14 @@ const DashboardPage = () => {
           <FaDatabase className="text-2xl text-purple-600" />
           <h2 className="text-xl font-bold text-gray-900">Database Storage Details</h2>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
             <p className="text-sm text-blue-600 font-medium mb-1">Total Used</p>
             <p className="text-2xl font-bold text-blue-900">{formatBytes(dbStats.totalSize)}</p>
             <p className="text-xs text-blue-600 mt-1">{dbStats.usedPercentage}% of quota</p>
           </div>
-          
+
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
             <p className="text-sm text-green-600 font-medium mb-1">Available</p>
             <p className="text-2xl font-bold text-green-900">
@@ -246,13 +302,13 @@ const DashboardPage = () => {
             </p>
             <p className="text-xs text-green-600 mt-1">{dbStats.freePercentage}% free</p>
           </div>
-          
+
           <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-4">
             <p className="text-sm text-amber-600 font-medium mb-1">Collections</p>
             <p className="text-2xl font-bold text-amber-900">{dbStats.collections}</p>
             <p className="text-xs text-amber-600 mt-1">Database tables</p>
           </div>
-          
+
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
             <p className="text-sm text-purple-600 font-medium mb-1">Total Records</p>
             <p className="text-2xl font-bold text-purple-900">{dbStats.objects?.toLocaleString()}</p>

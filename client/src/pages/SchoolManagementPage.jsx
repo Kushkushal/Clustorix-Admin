@@ -16,10 +16,10 @@ import {
   ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 import { FaGraduationCap } from 'react-icons/fa';
-import { useAuth } from '../context/AuthContext'; // Import useAuth
+import { useAuth } from '../context/AuthContext';
 
 const SchoolManagementPage = () => {
-  const { api } = useAuth(); // Get authenticated api instance
+  const { api } = useAuth();
 
   const [schools, setSchools] = useState([]);
   const [filteredSchools, setFilteredSchools] = useState([]);
@@ -30,7 +30,7 @@ const SchoolManagementPage = () => {
   const [deleteModal, setDeleteModal] = useState({ show: false, school: null });
   const [statusModal, setStatusModal] = useState({ show: false, school: null, newStatus: false });
   const [viewSchool, setViewSchool] = useState(null);
-  const [schoolStats, setSchoolStats] = useState({ students: 0, teachers: 0 });
+  const [schoolStats, setSchoolStats] = useState({ students: 0, teachers: 0, classes: 0, totalFees: 0 });
   const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
@@ -52,7 +52,6 @@ const SchoolManagementPage = () => {
       setLoading(true);
       console.log('🏫 Fetching schools...');
 
-      // Use authenticated api instance
       const { data } = await api.get('/v1/schools');
 
       console.log('✅ Schools fetched:', data.data?.length || 0);
@@ -78,21 +77,37 @@ const SchoolManagementPage = () => {
   const fetchSchoolStats = async (schoolId) => {
     setLoadingStats(true);
     try {
-      // Fetch both students and teachers for this school
-      const [studentsResponse, teachersResponse] = await Promise.all([
+      // Fetch students, teachers, classes, and fees for this school
+      const [studentsResponse, teachersResponse, classesResponse, feesResponse] = await Promise.all([
         api.get(`/v1/students/school/${schoolId}`),
-        api.get(`/v1/teachers/school/${schoolId}`)
+        api.get(`/v1/teachers/school/${schoolId}`),
+        api.get(`/v1/classes/school/${schoolId}`),
+        api.get(`/v1/fees/school/${schoolId}`)
       ]);
 
-      console.log('✅ School stats fetched - Students:', studentsResponse.data.count, 'Teachers:', teachersResponse.data.count);
+      console.log('✅ School stats fetched - Students:', studentsResponse.data.count, 'Teachers:', teachersResponse.data.count, 'Classes:', classesResponse.data.count);
+
+      // Calculate total fees from fees collection
+      const feesRecords = feesResponse.data.data || [];
+      const totalFees = feesRecords.reduce((sum, feeRecord) => {
+        // Sum up totalFees from all installments
+        const recordTotal = (feeRecord.installments || []).reduce((installmentSum, installment) => {
+          return installmentSum + (parseFloat(installment.totalFees) || 0);
+        }, 0);
+        return sum + recordTotal;
+      }, 0);
+
+      console.log('💰 Total fees calculated:', totalFees);
 
       setSchoolStats({
         students: studentsResponse.data.count || 0,
-        teachers: teachersResponse.data.count || 0
+        teachers: teachersResponse.data.count || 0,
+        classes: classesResponse.data.count || 0,
+        totalFees: totalFees
       });
     } catch (err) {
       console.error('❌ Error fetching school stats:', err);
-      setSchoolStats({ students: 0, teachers: 0 });
+      setSchoolStats({ students: 0, teachers: 0, classes: 0, totalFees: 0 });
     } finally {
       setLoadingStats(false);
     }
@@ -253,6 +268,42 @@ const SchoolManagementPage = () => {
                     <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
                       <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-600 mb-1">Total Classes</p>
+                      {loadingStats ? (
+                        <div className="h-8 w-16 bg-green-200 animate-pulse rounded"></div>
+                      ) : (
+                        <p className="text-3xl font-bold text-green-900">{schoolStats.classes}</p>
+                      )}
+                    </div>
+                    <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-orange-600 mb-1">Total Fees</p>
+                      {loadingStats ? (
+                        <div className="h-8 w-20 bg-orange-200 animate-pulse rounded"></div>
+                      ) : (
+                        <p className="text-3xl font-bold text-orange-900">₹{schoolStats.totalFees.toLocaleString('en-IN')}</p>
+                      )}
+                    </div>
+                    <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </div>

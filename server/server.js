@@ -106,12 +106,20 @@ connectDB().then(() => {
   const studentRoutes = require("./routes/studentRoutes");
   const teacherRoutes = require("./routes/teacherRoutes");
   const statsRoutes = require("./routes/statsRoutes");
+  const feesRoutes = require('./routes/feesRoutes');
+  const attendanceRoutes = require('./routes/attendanceRoutes');
+  const classRoutes = require('./routes/classRoutes');
+  const subjectRoutes = require('./routes/subjectRoutes');
 
   app.use("/api/v1/auth", authRoutes);
   app.use("/api/v1/schools", schoolRoutes);
   app.use("/api/v1/students", studentRoutes);
   app.use("/api/v1/teachers", teacherRoutes);
   app.use("/api/v1/stats", statsRoutes);
+  app.use("/api/v1/fees", feesRoutes);
+  app.use("/api/v1/attendances", attendanceRoutes);
+  app.use("/api/v1/classes", classRoutes);
+  app.use("/api/v1/subjects", subjectRoutes);
 
   // Health check
   app.get("/", (req, res) => {
