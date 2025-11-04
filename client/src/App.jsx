@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
@@ -9,7 +9,6 @@ import Trainer from './pages/Trainers';
 import Subscription from './pages/Subscription';
 import Ticket from './pages/Ticket';
 import Settings from './pages/Settings';
-// import SchoolDetailsPage from './pages/SchoolDetailsPage';
 import LandingPage from './pages/LandingPage';
 
 function App() {
@@ -17,26 +16,27 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
-          {/* Public Landing Page */}
+          {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
-          
-          {/* Public Auth Route */}
           <Route path="/login" element={<LoginPage />} />
 
-          {/* Protected Routes */}
+          {/* Protected Routes - All admin routes require authentication */}
           <Route element={<ProtectedRoute />}>
             <Route path="/admin" element={<Layout />}>
+              {/* Default admin route */}
               <Route index element={<DashboardPage />} />
+              
+              {/* Admin sub-routes */}
               <Route path="schools" element={<SchoolManagementPage />} />
               <Route path="trainers" element={<Trainer />} />
               <Route path="subscriptions" element={<Subscription />} />
               <Route path="tickets" element={<Ticket />} />
               <Route path="settings" element={<Settings />} />
-
-              {/* <Route path="schools/:id" element={<SchoolDetailsPage />} /> */}
-              {/* Add other routes here (e.g., /admin/trainers, /admin/subscriptions) */}
             </Route>
           </Route>
+
+          {/* Catch all - redirect to landing page */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </Router>

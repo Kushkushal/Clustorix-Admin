@@ -9,21 +9,15 @@ const protect = async (req, res, next) => {
     token = req.headers.authorization.split(' ')[1];
     console.log('🔐 Token from Authorization header');
   }
-  // Priority 2: Check cookies (fallback)
+  // Priority 2: Check cookies (fallback for cookie-based auth)
   else if (req.cookies && req.cookies.token) {
     token = req.cookies.token;
     console.log('🔐 Token from cookie');
   }
 
-  // Debug logging
-  console.log('=== Auth Middleware Debug ===');
-  console.log('Has Authorization header:', !!req.headers.authorization);
-  console.log('Has cookie:', !!req.cookies?.token);
-  console.log('Token found:', !!token);
-  console.log('Origin:', req.headers.origin);
-  console.log('============================');
-
+  // No token found
   if (!token) {
+    console.log('❌ No token provided');
     return res.status(401).json({ 
       success: false, 
       message: 'Not authorized - No token provided' 
@@ -35,7 +29,7 @@ const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('✅ Token decoded, user ID:', decoded.id);
     
-    // Handle default admin (from env)
+    // Handle default admin (from env variables)
     if (decoded.id === 'default-admin-id') {
       req.user = {
         _id: 'default-admin-id',
@@ -50,22 +44,34 @@ const protect = async (req, res, next) => {
     
     // Handle database users
     const user = await User.findById(decoded.id).select('-password');
+    
     if (!user) {
-      console.log('❌ User not found in database');
+      console.log('❌ User not found in database for ID:', decoded.id);
       return res.status(401).json({ 
         success: false, 
-        message: 'User not found' 
+        message: 'User not found - Token may be invalid' 
       });
     }
     
     req.user = user;
-    console.log('✅ User authenticated:', user.email);
+    console.log('✅ User authenticated:', user.email, '| Role:', user.role);
     next();
+    
   } catch (err) {
     console.error('❌ Token verification failed:', err.message);
+    
+    // Provide specific error messages
+    let message = 'Not authorized - Invalid token';
+    
+    if (err.name === 'JsonWebTokenError') {
+      message = 'Not authorized - Malformed token';
+    } else if (err.name === 'TokenExpiredError') {
+      message = 'Not authorized - Token expired';
+    }
+    
     return res.status(401).json({ 
       success: false, 
-      message: 'Not authorized - Invalid or expired token'
+      message 
     });
   }
 };
@@ -73,6 +79,7 @@ const protect = async (req, res, next) => {
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
+      console.log('❌ Authorization failed - No user in request');
       return res.status(401).json({
         success: false,
         message: 'User not authenticated',
@@ -80,9 +87,10 @@ const authorize = (...roles) => {
     }
 
     if (!roles.includes(req.user.role)) {
+      console.log(`❌ Authorization failed - User role '${req.user.role}' not in [${roles.join(', ')}]`);
       return res.status(403).json({
         success: false,
-        message: `User role '${req.user.role}' is not authorized to access this route`,
+        message: `User role '${req.user.role}' is not authorized to access this route. Required: ${roles.join(' or ')}`,
       });
     }
     

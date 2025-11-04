@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { baseUrl } from '../../../client/src/environment';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('admin@gmail.com');
@@ -11,7 +9,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const { checkAuth } = useAuth();
+  const { login } = useAuth(); // Use the centralized login method
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,47 +17,17 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Clear any existing tokens first
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      const result = await login(email, password);
       
-      // Logout to clear any existing session
-      await axios.get(`${baseUrl}/v1/auth/logout`, { withCredentials: true }).catch(() => {});
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Login
-      const response = await axios.post(
-        `${baseUrl}/v1/auth/login`,
-        { email, password },
-        { withCredentials: true }
-      );
-
-      if (response.data.success) {
-        console.log('Login successful:', response.data);
-        
-        // IMPORTANT: Store BOTH token and user
-        const token = response.data.token;
-        
-        if (!token) {
-          throw new Error('No token received from server');
-        }
-        
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        
-        console.log('Token stored:', localStorage.getItem('token'));
-        console.log('User stored:', localStorage.getItem('user'));
-        
-        // Wait a bit for localStorage to sync
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Check auth and navigate
-        await checkAuth();
-        navigate('/admin');
+      if (result.success) {
+        console.log('✅ Login successful');
+        navigate('/admin', { replace: true });
+      } else {
+        setError(result.message || 'Login failed. Please try again.');
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.message || err.message || 'Login failed. Please try again.');
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }

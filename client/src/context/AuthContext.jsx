@@ -16,7 +16,7 @@ export const useAuth = () => {
 // Create axios instance with default config
 const api = axios.create({
     baseURL: baseUrl,
-    withCredentials: true, // Important for cookies
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     }
@@ -27,16 +27,13 @@ api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('✅ Adding token to request:', token.substring(0, 20) + '...');
-    } else {
-        console.log('⚠️ No token found in localStorage');
     }
     return config;
 }, (error) => {
     return Promise.reject(error);
 });
 
-// Add response interceptor for global error handling
+// Add response interceptor for automatic logout on 401
 api.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -44,6 +41,10 @@ api.interceptors.response.use(
             console.error('❌ 401 Unauthorized - Clearing auth data');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
+            // Redirect to login if not already there
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }
@@ -64,54 +65,50 @@ export const AuthProvider = ({ children }) => {
             const token = localStorage.getItem('token');
             const storedUser = localStorage.getItem('user');
             
-            console.log('🔍 Checking auth...');
-            console.log('- Token exists:', !!token);
-            console.log('- Stored user exists:', !!storedUser);
-            
             if (!token) {
-                console.log('❌ No token found, user not authenticated');
                 setUser(null);
                 setIsAuthenticated(false);
                 setLoading(false);
                 return;
             }
 
-            // If we have stored user data, use it immediately for faster UI
+            // Load user from localStorage immediately for instant UI
             if (storedUser) {
                 try {
                     const parsedUser = JSON.parse(storedUser);
                     setUser(parsedUser);
                     setIsAuthenticated(true);
-                    console.log('✅ Loaded user from localStorage:', parsedUser.email);
+                    console.log('✅ User loaded from cache:', parsedUser.email);
                 } catch (e) {
                     console.error('Failed to parse stored user:', e);
                 }
             }
 
-            // Verify token with backend
-            const response = await api.get('/v1/auth/me');
-            console.log('✅ Auth verification response:', response.data);
-
-            if (response.data.success) {
-                setUser(response.data.data);
-                setIsAuthenticated(true);
-                // Update localStorage with fresh data
-                localStorage.setItem('user', JSON.stringify(response.data.data));
-            } else {
-                console.log('❌ Auth verification failed');
+            // Verify token with backend in background
+            try {
+                const response = await api.get('/v1/auth/me');
+                
+                if (response.data.success) {
+                    setUser(response.data.data);
+                    setIsAuthenticated(true);
+                    // Update cache with fresh data
+                    localStorage.setItem('user', JSON.stringify(response.data.data));
+                    console.log('✅ Token verified with server');
+                } else {
+                    throw new Error('Invalid auth response');
+                }
+            } catch (error) {
+                console.error('❌ Token verification failed:', error.message);
+                // Token invalid, clear everything
                 setUser(null);
                 setIsAuthenticated(false);
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
             }
         } catch (error) {
-            console.error('❌ Auth check error:', error.response?.status, error.message);
-            if (error.response?.status === 401) {
-                setUser(null);
-                setIsAuthenticated(false);
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-            }
+            console.error('❌ Auth check error:', error);
+            setUser(null);
+            setIsAuthenticated(false);
         } finally {
             setLoading(false);
         }
@@ -121,7 +118,7 @@ export const AuthProvider = ({ children }) => {
         try {
             console.log('🔐 Attempting login for:', email);
             
-            // Clear any existing auth data
+            // Clear any existing auth data first
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             
@@ -130,18 +127,19 @@ export const AuthProvider = ({ children }) => {
                 password 
             });
 
-            console.log('✅ Login response:', response.data);
+            console.log('Login response:', response.data);
 
             if (response.data.success && response.data.token) {
                 const { token, user } = response.data;
                 
-                // Store token and user data
+                // Store authentication data
                 localStorage.setItem('token', token);
                 localStorage.setItem('user', JSON.stringify(user));
                 
-                console.log('✅ Token stored:', token.substring(0, 20) + '...');
-                console.log('✅ User stored:', user.email);
+                console.log('✅ Token stored successfully');
+                console.log('✅ User:', user.email, '| Role:', user.role);
                 
+                // Update state
                 setUser(user);
                 setIsAuthenticated(true);
                 
@@ -168,11 +166,12 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
+            // Always clear local state regardless of API response
             setUser(null);
             setIsAuthenticated(false);
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            console.log('✅ Logout complete');
+            console.log('✅ Logout complete, redirecting to login');
             navigate('/login');
         }
     };
@@ -184,7 +183,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         checkAuth,
-        api, // Export api instance for use in other components
+        api, // Export for use in other components
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

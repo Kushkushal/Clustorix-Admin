@@ -4,14 +4,15 @@ const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/init', initializeAdmin);
+// Public routes (no authentication required)
+router.post('/login', login);           // Anyone can login
+router.get('/logout', logout);          // Anyone can logout (no need for auth)
+router.get('/init', initializeAdmin);   // Initialize default admin (one-time setup)
 
-// Public routes
-router.post('/login', login);
-router.get('/logout', logout); // ← REMOVE protect middleware
+// Protected routes (authentication required)
+router.get('/me', protect, getMe);      // Get current user info (must be logged in)
 
-// Private routes
-router.get('/me', protect, getMe);
-router.post('/register', protect, authorize('SuperAdmin'), register);
+// SuperAdmin only routes
+router.post('/register', protect, authorize('SuperAdmin'), register);  // Only SuperAdmin can create new admins
 
 module.exports = router;
