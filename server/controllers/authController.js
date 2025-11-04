@@ -1,4 +1,3 @@
-const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 // Helper function to generate JWT
@@ -22,7 +21,7 @@ const sendTokenResponse = (user, statusCode, res) => {
     const cookieOptions = {
         expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // true in production only
+        secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
     };
@@ -41,47 +40,14 @@ const sendTokenResponse = (user, statusCode, res) => {
        });
 };
 
-// @desc    Register a user (Only SuperAdmin can create new Admins)
-// @route   POST /api/v1/auth/register
-// @access  Private (SuperAdmin only)
-exports.register = async (req, res, next) => {
-    try {
-        const { name, email, password, role } = req.body;
-
-        // Validate required fields
-        if (!name || !email || !password) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Please provide name, email and password' 
-            });
-        }
-
-        // Create user
-        const user = await User.create({
-            name,
-            email,
-            password,
-            role: role || 'Admin',
-        });
-
-        console.log('✅ New user registered:', user.email);
-        sendTokenResponse(user, 201, res);
-    } catch (error) {
-        console.error('❌ Registration error:', error.message);
-        res.status(400).json({ 
-            success: false, 
-            message: error.message 
-        });
-    }
-};
-
-// @desc    Login user
+// @desc    Login user (ONLY checks environment variables - NO DATABASE)
 // @route   POST /api/v1/auth/login
 // @access  Public
 exports.login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
+        // Validation
         if (!email || !password) {
             return res.status(400).json({ 
                 success: false, 
@@ -91,14 +57,23 @@ exports.login = async (req, res, next) => {
 
         console.log('🔐 Login attempt for:', email);
 
-        // Check if credentials match default admin credentials in env
+        // Get credentials from environment
         const defaultEmail = process.env.DEFAULT_ADMIN_EMAIL;
         const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD;
 
+        // Check if env variables are set
+        if (!defaultEmail || !defaultPassword) {
+            console.error('❌ DEFAULT_ADMIN_EMAIL or DEFAULT_ADMIN_PASSWORD not set in .env');
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Server configuration error' 
+            });
+        }
+
+        // ONLY check environment credentials - NO DATABASE
         if (email === defaultEmail && password === defaultPassword) {
-            console.log('✅ Default admin login successful');
+            console.log('✅ Login successful for:', email);
             
-            // Create a fake user object for default admin (no DB query needed)
             const user = {
                 _id: 'default-admin-id',
                 name: 'Super Admin',
@@ -106,34 +81,14 @@ exports.login = async (req, res, next) => {
                 role: 'SuperAdmin',
             };
 
-            // Issue token and respond
             sendTokenResponse(user, 200, res);
-            return;
-        }
-
-        // Otherwise, normal MongoDB user lookup
-        const user = await User.findOne({ email }).select('+password');
-
-        if (!user) {
-            console.log('❌ User not found:', email);
+        } else {
+            console.log('❌ Invalid credentials for:', email);
             return res.status(401).json({ 
                 success: false, 
                 message: 'Invalid credentials' 
             });
         }
-
-        const isMatch = await user.matchPassword(password);
-
-        if (!isMatch) {
-            console.log('❌ Invalid password for:', email);
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Invalid credentials' 
-            });
-        }
-
-        console.log('✅ Database user login successful:', user.email);
-        sendTokenResponse(user, 200, res);
 
     } catch (error) {
         console.error('❌ Login error:', error.message);
@@ -144,15 +99,14 @@ exports.login = async (req, res, next) => {
     }
 };
 
-// @desc    Log user out / clear cookie
+// @desc    Log user out
 // @route   GET /api/v1/auth/logout
-// @access  Public (no auth required)
+// @access  Public
 exports.logout = (req, res, next) => {
     console.log('🚪 Logout request received');
     
-    // Clear the cookie with same settings as when set
     res.cookie('token', 'none', {
-        expires: new Date(Date.now() + 1 * 1000), // Expire immediately
+        expires: new Date(Date.now() + 1 * 1000),
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
@@ -166,12 +120,12 @@ exports.logout = (req, res, next) => {
     });
 };
 
-// @desc    Get current logged in user
+// @desc    Get current user
 // @route   GET /api/v1/auth/me
 // @access  Private
 exports.getMe = async (req, res, next) => {
     try {
-        const user = req.user; // User is attached by the protect middleware
+        const user = req.user;
         
         if (!user) {
             return res.status(401).json({
@@ -198,55 +152,28 @@ exports.getMe = async (req, res, next) => {
     }
 };
 
-// @desc    Initialize SuperAdmin if none exists
+// @desc    Register - DISABLED (not using database)
+// @route   POST /api/v1/auth/register
+// @access  Private
+exports.register = async (req, res, next) => {
+    return res.status(501).json({
+        success: false,
+        message: 'User registration is disabled. Only default admin can login.'
+    });
+};
+
+// @desc    Initialize - DISABLED (not using database)
 // @route   GET /api/v1/auth/init
-// @access  Public (Internal use)
+// @access  Public
 exports.initializeAdmin = async (req, res, next) => {
-    try {
-        const superAdminExists = await User.findOne({ role: 'SuperAdmin' });
-
-        if (superAdminExists) {
-            console.log('⚠️ SuperAdmin already exists');
-            return res.status(200).json({ 
-                success: true, 
-                message: 'SuperAdmin already initialized.' 
-            });
+    return res.status(200).json({
+        success: true,
+        message: 'Using environment-based authentication. No database initialization needed.',
+        admin: {
+            email: process.env.DEFAULT_ADMIN_EMAIL,
+            note: 'Login with credentials from .env file'
         }
-
-        const defaultEmail = process.env.DEFAULT_ADMIN_EMAIL;
-        const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD;
-
-        if (!defaultEmail || !defaultPassword) {
-            return res.status(500).json({ 
-                success: false, 
-                message: 'Default admin credentials not set in environment variables.' 
-            });
-        }
-
-        const superAdmin = await User.create({
-            name: 'Super Admin',
-            email: defaultEmail,
-            password: defaultPassword,
-            role: 'SuperAdmin',
-        });
-
-        console.log('✅ SuperAdmin initialized:', superAdmin.email);
-
-        res.status(201).json({
-            success: true,
-            message: 'SuperAdmin initialized successfully.',
-            user: {
-                email: superAdmin.email,
-                role: superAdmin.role,
-            },
-        });
-    } catch (error) {
-        console.error('❌ Init admin error:', error.message);
-        res.status(500).json({ 
-            success: false, 
-            message: error.message 
-        });
-    }
+    });
 };
 
 module.exports = {
