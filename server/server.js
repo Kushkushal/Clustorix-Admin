@@ -43,38 +43,23 @@ const allowedOrigins = [
   // 'http://localhost:5173',           // Vite dev
   // 'http://localhost:3000',           // React dev
   // 'http://localhost:5174', // Alternative port
-  'https://clustorix-admin-frontend.onrender.com',
-  'https://admin.clustorix.com',
   'https://www.admin.clustorix.com'
 ];
 
 const corsOptions = {
-  origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, server-to-server)
-    if (!origin) {
-      console.log('✅ CORS: Allowing request with no origin (Postman/Mobile)');
-      return callback(null, true);
-    }
-    
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // allow non-browser requests
     if (allowedOrigins.includes(origin)) {
-      console.log('✅ CORS: Allowed origin:', origin);
       callback(null, true);
     } else {
-      console.log('❌ CORS: Blocked origin:', origin);
-      callback(new Error(`CORS policy: Origin ${origin} is not allowed`));
+      callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true, // Allow cookies
-  exposedHeaders: ['Authorization', 'Set-Cookie'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
 };
 
 app.use(cors(corsOptions));
-
-// Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
 
 // Request logger middleware (helpful for debugging)
