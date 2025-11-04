@@ -30,7 +30,7 @@ const SchoolManagementPage = () => {
   const [deleteModal, setDeleteModal] = useState({ show: false, school: null });
   const [statusModal, setStatusModal] = useState({ show: false, school: null, newStatus: false });
   const [viewSchool, setViewSchool] = useState(null);
-  const [schoolStats, setSchoolStats] = useState({ students: 0, teachers: 25 });
+  const [schoolStats, setSchoolStats] = useState({ students: 0, teachers: 0 });
   const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
@@ -78,15 +78,21 @@ const SchoolManagementPage = () => {
   const fetchSchoolStats = async (schoolId) => {
     setLoadingStats(true);
     try {
-      const { data } = await api.get(`/v1/students/school/${schoolId}`);
+      // Fetch both students and teachers for this school
+      const [studentsResponse, teachersResponse] = await Promise.all([
+        api.get(`/v1/students/school/${schoolId}`),
+        api.get(`/v1/teachers/school/${schoolId}`)
+      ]);
+
+      console.log('✅ School stats fetched - Students:', studentsResponse.data.count, 'Teachers:', teachersResponse.data.count);
 
       setSchoolStats({
-        students: data.count || 0,
-        teachers: 25
+        students: studentsResponse.data.count || 0,
+        teachers: teachersResponse.data.count || 0
       });
     } catch (err) {
-      console.error('Error fetching school stats:', err);
-      setSchoolStats({ students: 0, teachers: 25 });
+      console.error('❌ Error fetching school stats:', err);
+      setSchoolStats({ students: 0, teachers: 0 });
     } finally {
       setLoadingStats(false);
     }
@@ -601,7 +607,6 @@ const SchoolManagementPage = () => {
             </div>
             <p className="text-sm sm:text-base text-gray-600 mb-6">
               Are you sure you want to delete <strong>{deleteModal.school?.school_name}</strong>?
-              This action cannot be undone.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <button

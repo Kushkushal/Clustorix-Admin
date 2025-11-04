@@ -16,7 +16,7 @@ const DashboardPage = () => {
     totalSchools: 0,
     activeSchools: 0,
     totalStudents: 0,
-    totalTeachers: 25, // Mock data
+    totalTeachers: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,20 +32,25 @@ const DashboardPage = () => {
       
       // Use the authenticated api instance from AuthContext
       // This automatically includes the Authorization header with token
-      const schoolsResponse = await api.get('/v1/schools');
-      const studentsResponse = await api.get('/v1/students');
+      const [schoolsResponse, studentsResponse, teachersResponse] = await Promise.all([
+        api.get('/v1/schools'),
+        api.get('/v1/students'),
+        api.get('/v1/teachers')
+      ]);
 
       console.log('✅ Schools fetched:', schoolsResponse.data.data?.length || 0);
       console.log('✅ Students fetched:', studentsResponse.data.data?.length || 0);
+      console.log('✅ Teachers fetched:', teachersResponse.data.data?.length || 0);
 
       const schools = schoolsResponse.data.data || [];
       const students = studentsResponse.data.data || [];
+      const teachers = teachersResponse.data.data || [];
 
       setStats({
         totalSchools: schools.length,
         activeSchools: schools.filter(s => s.isActive).length,
         totalStudents: students.length,
-        totalTeachers: 25,
+        totalTeachers: teachers.length,
       });
 
       setError(null);
@@ -121,7 +126,7 @@ const DashboardPage = () => {
       icon: UserGroupIcon,
       color: 'green',
       bgGradient: 'from-green-500 to-green-600',
-      trend: '+5%',
+      trend: stats.totalTeachers > 0 ? '+5%' : null,
       trendUp: true
     }
   ];
