@@ -18,7 +18,7 @@ const FeatureCard = ({ title, description, icon: Icon, actionText, actionLink = 
 const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans relative">
-      
+
       {/* Background Gradient Layer */}
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-700 via-black-700 to-purple-800 h-[60vh] z-0 rounded-bl-2xl rounded-br-2xl"></div>
 
@@ -39,7 +39,7 @@ const LandingPage = () => {
 
       {/* Main Content (Offset for fixed header) */}
       <main className="flex-grow flex flex-col items-center justify-start px-4 text-center z-0 pt-28 md:pt-36 pb-16 max-w-full">
-        
+
         {/* Hero Section */}
         <div className="max-w-6xl mx-auto mb-16 relative px-2 sm:px-4">
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold mb-6 text-white leading-tight drop-shadow-lg max-w-full">
@@ -52,7 +52,7 @@ const LandingPage = () => {
 
         {/* Feature Cards Section (Responsive Grid) */}
         <div className="w-full max-w-6xl grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 sm:gap-x-6 gap-y-8 px-2 sm:px-4">
-          <FeatureCard 
+          <FeatureCard
             title="Subscription & Billing"
             description="Manage dynamic pricing, handle plan upgrades/downgrades, and view payment history for all client schools."
             icon={ScaleIcon}
@@ -60,7 +60,7 @@ const LandingPage = () => {
             actionLink="/pricing"
           />
 
-          <FeatureCard 
+          <FeatureCard
             title="Client School Directory"
             description="Access a complete list of all active and pending client accounts, along with their assigned administrators and modules."
             icon={UsersIcon}
@@ -68,7 +68,7 @@ const LandingPage = () => {
             actionLink="/accounts"
           />
 
-          <FeatureCard 
+          <FeatureCard
             title="Service Desk Overview"
             description="Monitor real-time support ticket volume, track resolution times, and analyze common issues to improve service quality."
             icon={CheckCircleIcon}
@@ -80,12 +80,13 @@ const LandingPage = () => {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 bg-black mt-auto rounded-t-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
-              <p className="text-sm text-white text-center">© {new Date().getFullYear()} Clustorix Admin Portal. All rights reserved.</p>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-center items-center">
+            <p className="text-sm text-white text-center">© {new Date().getFullYear()} Clustorix Admin Portal. All rights reserved.</p>
           </div>
-        </footer>
+        </div>
+      </footer>
+
 
     </div>
   );
