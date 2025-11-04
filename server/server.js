@@ -48,7 +48,7 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // allow non-browser requests
+    if (!origin) return callback(null, true); // allow non-browser requests like Postman
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -60,7 +60,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.options('*', cors(corsOptions)); // enable preflight for all routes
 
 // Request logger middleware (helpful for debugging)
 app.use((req, res, next) => {
