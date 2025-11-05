@@ -152,3 +152,28 @@ exports.getTicketStats = async (req, res, next) => {
         });
     }
 };
+
+// @desc    Get tickets for a specific school
+// @route   GET /api/v1/tickets/school/:schoolId
+// @access  Private (Admin/SuperAdmin)
+exports.getTicketsBySchool = async (req, res, next) => {
+  try {
+    const tickets = await Ticket.find({ school: req.params.schoolId })
+      .populate({
+        path: 'school',
+        select: 'school_name owner_name email phone city state'
+      })
+      .sort({ createdAt: -1 })
+      .select('_id school title description issueArea ticketImages status createdAt updatedAt')
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      count: tickets.length,
+      data: tickets
+    });
+  } catch (error) {
+    console.error('Error fetching school tickets:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
