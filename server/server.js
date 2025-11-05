@@ -110,6 +110,7 @@ connectDB().then(() => {
   const attendanceRoutes = require('./routes/attendanceRoutes');
   const classRoutes = require('./routes/classRoutes');
   const subjectRoutes = require('./routes/subjectRoutes');
+  const ticketRoutes = require('./routes/ticketRoutes');
 
   app.use("/api/v1/auth", authRoutes);
   app.use("/api/v1/schools", schoolRoutes);
@@ -120,6 +121,8 @@ connectDB().then(() => {
   app.use("/api/v1/attendances", attendanceRoutes);
   app.use("/api/v1/classes", classRoutes);
   app.use("/api/v1/subjects", subjectRoutes);
+  app.use('/api/v1/tickets', ticketRoutes);
+
 
   // Health check
   app.get("/", (req, res) => {
