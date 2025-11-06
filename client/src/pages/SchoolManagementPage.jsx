@@ -18,6 +18,23 @@ import {
 import { FaGraduationCap } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 
+// Global CSS animation styles for notification
+const styles = `
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+`;
+
 const SchoolManagementPage = () => {
   const { api } = useAuth();
 
@@ -32,6 +49,28 @@ const SchoolManagementPage = () => {
   const [viewSchool, setViewSchool] = useState(null);
   const [schoolStats, setSchoolStats] = useState({ students: 0, teachers: 0, classes: 0, totalFees: 0 });
   const [loadingStats, setLoadingStats] = useState(false);
+  const [savingFeatures, setSavingFeatures] = useState(false);
+  const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+
+  const featuresList = [
+    { key: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { key: 'class', label: 'Classes', icon: '🏫' },
+    { key: 'subject', label: 'Subjects', icon: '📚' },
+    { key: 'students', label: 'Students', icon: '👨‍🎓' },
+    { key: 'teachers', label: 'Teachers', icon: '👨‍🏫' },
+    { key: 'periods', label: 'Periods', icon: '⏰' },
+    { key: 'attendance', label: 'Attendance', icon: '✅' },
+    { key: 'schoolmarks', label: 'School Marks', icon: '📝' },
+    { key: 'examinations', label: 'Examinations', icon: '📋' },
+    { key: 'events', label: 'Events', icon: '🎉' },
+    { key: 'bus', label: 'Bus', icon: '🚌' },
+    { key: 'fees', label: 'Fees', icon: '💰' },
+    { key: 'promotion', label: 'Promotion', icon: '🎓' },
+    { key: 'notice', label: 'Notice', icon: '📢' },
+    { key: 'ticket', label: 'Support Tickets', icon: '🎫' },
+    { key: 'assignments', label: 'Assignments', icon: '📄' },
+    { key: 'chat', label: 'Chat', icon: '💬' }
+  ];
 
   useEffect(() => {
     fetchSchools();
@@ -77,7 +116,6 @@ const SchoolManagementPage = () => {
   const fetchSchoolStats = async (schoolId) => {
     setLoadingStats(true);
     try {
-      // Fetch students, teachers, classes, and fees for this school
       const [studentsResponse, teachersResponse, classesResponse, feesResponse] = await Promise.all([
         api.get(`/v1/students/school/${schoolId}`),
         api.get(`/v1/teachers/school/${schoolId}`),
@@ -85,19 +123,15 @@ const SchoolManagementPage = () => {
         api.get(`/v1/fees/school/${schoolId}`)
       ]);
 
-      console.log('✅ School stats fetched - Students:', studentsResponse.data.count, 'Teachers:', teachersResponse.data.count, 'Classes:', classesResponse.data.count);
+      console.log('✅ School stats fetched');
 
-      // Calculate total fees from fees collection
       const feesRecords = feesResponse.data.data || [];
       const totalFees = feesRecords.reduce((sum, feeRecord) => {
-        // Sum up totalFees from all installments
         const recordTotal = (feeRecord.installments || []).reduce((installmentSum, installment) => {
           return installmentSum + (parseFloat(installment.totalFees) || 0);
         }, 0);
         return sum + recordTotal;
       }, 0);
-
-      console.log('💰 Total fees calculated:', totalFees);
 
       setSchoolStats({
         students: studentsResponse.data.count || 0,
@@ -133,6 +167,64 @@ const SchoolManagementPage = () => {
     setFilteredSchools(filtered);
   };
 
+  const handleFeatureToggle = (featureKey) => {
+    if (!viewSchool) return;
+
+    setViewSchool({
+      ...viewSchool,
+      features: {
+        ...viewSchool.features,
+        [featureKey]: !viewSchool.features[featureKey]
+      }
+    });
+  };
+
+  const saveFeatures = async () => {
+    if (!viewSchool) return;
+
+    setSavingFeatures(true);
+    try {
+      console.log('💾 Saving features...');
+
+      const { data } = await api.put(
+        `/v1/schools/${viewSchool._id}/features`,
+        { features: viewSchool.features }
+      );
+
+      if (data.success) {
+        console.log('✅ Features updated successfully');
+        setSchools(schools.map(school =>
+          school._id === viewSchool._id ? data.data : school
+        ));
+        setViewSchool(data.data);
+
+        setNotification({
+          show: true,
+          message: 'Features updated successfully!',
+          type: 'success'
+        });
+
+        setTimeout(() => {
+          setNotification({ show: false, message: '', type: '' });
+        }, 3000);
+      }
+    } catch (err) {
+      console.error('❌ Error updating features:', err);
+
+      setNotification({
+        show: true,
+        message: err.response?.data?.message || 'Failed to update features',
+        type: 'error'
+      });
+
+      setTimeout(() => {
+        setNotification({ show: false, message: '', type: '' });
+      }, 3000);
+    } finally {
+      setSavingFeatures(false);
+    }
+  };
+
   const handleStatusChange = async () => {
     if (!statusModal.school) return;
 
@@ -158,7 +250,14 @@ const SchoolManagementPage = () => {
       }
     } catch (err) {
       console.error('❌ Error updating school:', err);
-      alert(err.response?.data?.message || 'Failed to update school status');
+      setNotification({
+        show: true,
+        message: err.response?.data?.message || 'Failed to update school status',
+        type: 'error'
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: '', type: '' });
+      }, 3000);
     }
   };
 
@@ -177,17 +276,34 @@ const SchoolManagementPage = () => {
         if (viewSchool && viewSchool._id === deleteModal.school._id) {
           setViewSchool(null);
         }
+        setNotification({
+          show: true,
+          message: 'School deleted successfully!',
+          type: 'success'
+        });
+        setTimeout(() => {
+          setNotification({ show: false, message: '', type: '' });
+        }, 3000);
       }
     } catch (err) {
       console.error('❌ Error deleting school:', err);
-      alert(err.response?.data?.message || 'Failed to delete school');
+      setNotification({
+        show: true,
+        message: err.response?.data?.message || 'Failed to delete school',
+        type: 'error'
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: '', type: '' });
+      }, 3000);
     }
   };
 
   if (viewSchool) {
     return (
+      <>
+        <style>{styles}</style>
       <div className="min-h-screen bg-gray-50 pb-8">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <button
             onClick={() => setViewSchool(null)}
             className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-800 mb-6 mt-6"
@@ -196,8 +312,8 @@ const SchoolManagementPage = () => {
             <span className="font-medium">Back to Schools</span>
           </button>
 
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="relative h-48 sm:h-64 md:h-80 bg-gradient-to-br from-indigo-500 to-purple-600">
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
+            <div className="relative h-48 sm:h-64 bg-gradient-to-br from-indigo-500 to-purple-600">
               {viewSchool.school_image ? (
                 <img
                   src={viewSchool.school_image}
@@ -206,7 +322,7 @@ const SchoolManagementPage = () => {
                 />
               ) : (
                 <div className="flex items-center justify-center h-full">
-                  <AcademicCapIcon className="w-24 h-24 sm:w-32 sm:h-32 text-white opacity-50" />
+                  <AcademicCapIcon className="w-24 h-24 text-white opacity-50" />
                 </div>
               )}
 
@@ -226,21 +342,21 @@ const SchoolManagementPage = () => {
             </div>
 
             <div className="p-6 sm:p-8">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
                 {viewSchool.school_name}
               </h1>
 
               {viewSchool.description && (
-                <p className="text-gray-600 text-base sm:text-lg mb-6">
+                <p className="text-gray-600 text-lg mb-6">
                   {viewSchool.description}
                 </p>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-blue-600 mb-1">Total Students</p>
+                      <p className="text-sm font-medium text-blue-600 mb-1">Students</p>
                       {loadingStats ? (
                         <div className="h-8 w-16 bg-blue-200 animate-pulse rounded"></div>
                       ) : (
@@ -258,7 +374,7 @@ const SchoolManagementPage = () => {
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-purple-600 mb-1">Total Teachers</p>
+                      <p className="text-sm font-medium text-purple-600 mb-1">Teachers</p>
                       {loadingStats ? (
                         <div className="h-8 w-16 bg-purple-200 animate-pulse rounded"></div>
                       ) : (
@@ -276,7 +392,7 @@ const SchoolManagementPage = () => {
                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-green-600 mb-1">Total Classes</p>
+                      <p className="text-sm font-medium text-green-600 mb-1">Classes</p>
                       {loadingStats ? (
                         <div className="h-8 w-16 bg-green-200 animate-pulse rounded"></div>
                       ) : (
@@ -298,7 +414,7 @@ const SchoolManagementPage = () => {
                       {loadingStats ? (
                         <div className="h-8 w-20 bg-orange-200 animate-pulse rounded"></div>
                       ) : (
-                        <p className="text-3xl font-bold text-orange-900">₹{schoolStats.totalFees.toLocaleString('en-IN')}</p>
+                        <p className="text-2xl font-bold text-orange-900">₹{schoolStats.totalFees.toLocaleString('en-IN')}</p>
                       )}
                     </div>
                     <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
@@ -406,8 +522,97 @@ const SchoolManagementPage = () => {
               </div>
             </div>
           </div>
+
+          {/* Features Toggle Section */}
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">School Features</h2>
+                <p className="text-sm text-gray-600 mt-1">Enable or disable features for this school</p>
+              </div>
+              <button
+                onClick={saveFeatures}
+                disabled={savingFeatures}
+                className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              >
+                {savingFeatures ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircleIcon className="w-5 h-5" />
+                    <span>Save Changes</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {featuresList.map((feature) => (
+                <div
+                  key={feature.key}
+                  className={`border-2 rounded-lg p-4 transition-all cursor-pointer ${
+                    viewSchool.features?.[feature.key]
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200 bg-gray-50'
+                  }`}
+                  onClick={() => handleFeatureToggle(feature.key)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">{feature.icon}</span>
+                      <span className="font-medium text-gray-900">{feature.label}</span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFeatureToggle(feature.key);
+                      }}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        viewSchool.features?.[feature.key]
+                          ? 'bg-green-500'
+                          : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          viewSchool.features?.[feature.key]
+                            ? 'translate-x-6'
+                            : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+     {notification.show && (
+            <div className="fixed top-4 right-4 z-50 animate-slide-in">
+              <div className={`rounded-lg shadow-lg p-4 flex items-center space-x-3 min-w-[300px] ${notification.type === 'success'
+                ? 'bg-green-500 text-white'
+                : 'bg-red-500 text-white'
+                }`}>
+                {notification.type === 'success' ? (
+                  <CheckCircleIcon className="w-6 h-6 flex-shrink-0" />
+                ) : (
+                  <XCircleIcon className="w-6 h-6 flex-shrink-0" />
+                )}
+                <p className="font-medium flex-1">{notification.message}</p>
+                <button
+                  onClick={() => setNotification({ show: false, message: '', type: '' })}
+                  className="flex-shrink-0 hover:opacity-80"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </>
     );
   }
 
@@ -437,6 +642,8 @@ const SchoolManagementPage = () => {
   }
 
   return (
+    <>
+      <style>{styles}</style>
     <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
       <div className="flex flex-col items-center">
         <div className="flex items-center justify-center space-x-3">
@@ -657,7 +864,7 @@ const SchoolManagementPage = () => {
               </button>
             </div>
             <p className="text-sm sm:text-base text-gray-600 mb-6">
-              Are you sure you want to delete <strong>{deleteModal.school?.school_name}</strong>?
+              Are you sure you want to delete <strong>{deleteModal.school?.school_name}</strong>? This action cannot be undone.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <button
@@ -676,8 +883,31 @@ const SchoolManagementPage = () => {
           </div>
         </div>
       )}
-    </div>
+   {notification.show && (
+          <div className="fixed top-4 right-4 z-50 animate-slide-in">
+            <div className={`rounded-lg shadow-lg p-4 flex items-center space-x-3 min-w-[300px] ${notification.type === 'success'
+              ? 'bg-green-500 text-white'
+              : 'bg-red-500 text-white'
+              }`}>
+              {notification.type === 'success' ? (
+                <CheckCircleIcon className="w-6 h-6 flex-shrink-0" />
+              ) : (
+                <XCircleIcon className="w-6 h-6 flex-shrink-0" />
+              )}
+              <p className="font-medium flex-1">{notification.message}</p>
+              <button
+                onClick={() => setNotification({ show: false, message: '', type: '' })}
+                className="flex-shrink-0 hover:opacity-80"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 };
+
 
 export default SchoolManagementPage;

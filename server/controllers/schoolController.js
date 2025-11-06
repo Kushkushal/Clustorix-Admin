@@ -29,9 +29,9 @@ exports.getSchool = async (req, res, next) => {
     }
 };
 
-// @desc    Create new school (Mock registration)
+// @desc    Create new school
 // @route   POST /api/v1/schools
-// @access  Private (SuperAdmin) - For testing/manual entry
+// @access  Private (SuperAdmin)
 exports.createSchool = async (req, res, next) => {
     try {
         const school = await School.create(req.body);
@@ -41,7 +41,7 @@ exports.createSchool = async (req, res, next) => {
     }
 };
 
-// @desc    Update school (e.g., approve, toggle isActive)
+// @desc    Update school
 // @route   PUT /api/v1/schools/:id
 // @access  Private (SuperAdmin)
 exports.updateSchool = async (req, res, next) => {
@@ -50,6 +50,32 @@ exports.updateSchool = async (req, res, next) => {
             new: true,
             runValidators: true,
         });
+
+        if (!school) {
+            return res.status(404).json({ success: false, message: `School not found with id of ${req.params.id}` });
+        }
+
+        res.status(200).json({ success: true, data: school });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Update school features
+// @route   PUT /api/v1/schools/:id/features
+// @access  Private (SuperAdmin)
+exports.updateSchoolFeatures = async (req, res, next) => {
+    try {
+        const { features } = req.body;
+
+        const school = await School.findByIdAndUpdate(
+            req.params.id,
+            { features },
+            {
+                new: true,
+                runValidators: true,
+            }
+        );
 
         if (!school) {
             return res.status(404).json({ success: false, message: `School not found with id of ${req.params.id}` });
@@ -87,35 +113,12 @@ exports.getDashboardSummary = async (req, res, next) => {
         const activeSchools = await School.countDocuments({ isActive: true });
         const pendingSchools = await School.countDocuments({ isActive: false });
 
-        // Mock data for other metrics
-        const totalStudents = 15000; // Mock
-        const activeSubscriptions = 45; // Mock
-        const pendingTickets = 12; // Mock
-
-        // Mock chart data (Monthly new schools)
-        const monthlyData = [
-            { month: 'Jan', schools: 5 },
-            { month: 'Feb', schools: 8 },
-            { month: 'Mar', schools: 12 },
-            { month: 'Apr', schools: 15 },
-            { month: 'May', schools: 10 },
-            { month: 'Jun', schools: 20 },
-        ];
-
         res.status(200).json({
             success: true,
             data: {
-                widgets: {
-                    totalSchools,
-                    activeSchools,
-                    pendingSchools,
-                    totalStudents,
-                    activeSubscriptions,
-                    pendingTickets,
-                },
-                charts: {
-                    monthlyNewSchools: monthlyData,
-                },
+                totalSchools,
+                activeSchools,
+                pendingSchools,
             },
         });
     } catch (error) {
