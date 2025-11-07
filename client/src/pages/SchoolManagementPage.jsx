@@ -590,6 +590,77 @@ const SchoolManagementPage = () => {
             </div>
           </div>
         </div>
+
+        {statusModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">Confirm Status Change</h3>
+              <button
+                onClick={() => setStatusModal({ show: false, school: null, newStatus: false })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+            <p className="text-sm sm:text-base text-gray-600 mb-6">
+              Are you sure you want to <strong>{statusModal.newStatus ? 'activate' : 'deactivate'}</strong>{' '}
+              <strong>{statusModal.school?.school_name}</strong>?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setStatusModal({ show: false, school: null, newStatus: false })}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStatusChange}
+                className={`flex-1 px-4 py-2 text-white rounded-lg transition font-medium ${statusModal.newStatus
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : 'bg-yellow-600 hover:bg-yellow-700'
+                  }`}
+              >
+                {statusModal.newStatus ? 'Activate' : 'Deactivate'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">Confirm Delete</h3>
+              <button
+                onClick={() => setDeleteModal({ show: false, school: null })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+            <p className="text-sm sm:text-base text-gray-600 mb-6">
+              Are you sure you want to delete <strong>{deleteModal.school?.school_name}</strong>? This action cannot be undone.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setDeleteModal({ show: false, school: null })}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+  
      {notification.show && (
             <div className="fixed top-4 right-4 z-50 animate-slide-in">
               <div className={`rounded-lg shadow-lg p-4 flex items-center space-x-3 min-w-[300px] ${notification.type === 'success'
