@@ -1,6 +1,6 @@
 import React from 'react';
 import { IoAccessibility } from "react-icons/io5"; 
-const Trainers = () => {
+const Trainers= () => {
   return (
     
     <div className="text-center">

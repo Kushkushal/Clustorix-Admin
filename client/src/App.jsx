@@ -10,6 +10,7 @@ import Subscription from './pages/Subscription';
 import Ticket from './pages/Ticket';
 import Settings from './pages/Settings';
 import LandingPage from './pages/LandingPage';
+import Query from './pages/Query';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
               <Route path="trainers" element={<Trainer />} />
               <Route path="subscriptions" element={<Subscription />} />
               <Route path="tickets" element={<Ticket />} />
+              <Route path="queries" element={<Query />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Route>

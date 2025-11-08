@@ -7,7 +7,8 @@ import {
   TicketIcon,
   CreditCardIcon,
   Cog6ToothIcon,
-  XMarkIcon
+  XMarkIcon,
+  ChatBubbleBottomCenterTextIcon
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -16,6 +17,7 @@ const navigation = [
   { name: 'Trainers', href: '/admin/trainers', icon: UserGroupIcon },
   { name: 'Subscriptions', href: '/admin/subscriptions', icon: CreditCardIcon },
   { name: 'Tickets', href: '/admin/tickets', icon: TicketIcon },
+   { name: 'Queries', href: '/admin/queries', icon: ChatBubbleBottomCenterTextIcon },
   { name: 'Settings', href: '/admin/settings', icon: Cog6ToothIcon },
 ];
 
