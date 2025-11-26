@@ -43,8 +43,9 @@ export default function LoginPage() {
       </div>
 
       {/* Header */}
+
       <header className="relative z-10 bg-white backdrop-blur-md border-b border-gray-200/50 shadow-sm rounded-b-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -64,16 +65,7 @@ export default function LoginPage() {
                 <p className="text-xs text-gray-600 font-medium">Admin Portal</p>
               </div>
             </div>
-            {/* <div className="hidden md:flex items-center space-x-6">
-              <a href="#" className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition">Documentation</a>
-              <a href="#" className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition">Support</a>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span className="font-medium">System Online</span>
-              </div>
-            </div> */}
+
           </div>
         </div>
       </header>
