@@ -9,7 +9,7 @@ import Trainer from './pages/Trainers';
 import Subscription from './pages/Subscription';
 import Ticket from './pages/Ticket';
 import Settings from './pages/Settings';
-import LandingPage from './pages/LandingPage';
+import Loginpage from './pages/LoginPage';
 import Query from './pages/Query';
 
 function App() {
@@ -18,7 +18,7 @@ function App() {
       <AuthProvider>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Loginpage />} />
           <Route path="/login" element={<LoginPage />} />
 
           {/* Protected Routes - All admin routes require authentication */}
