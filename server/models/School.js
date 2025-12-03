@@ -108,6 +108,10 @@ const SchoolSchema = new mongoose.Schema({
             type: Boolean,
             default: false,
         },
+        admitcard: {
+            type: Boolean,
+            default: true,
+        },
     },
     subscriptionStatus: {
         type: String,

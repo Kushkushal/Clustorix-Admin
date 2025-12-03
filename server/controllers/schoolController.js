@@ -68,18 +68,32 @@ exports.updateSchoolFeatures = async (req, res, next) => {
     try {
         const { features } = req.body;
 
-        const school = await School.findByIdAndUpdate(
-            req.params.id,
-            { features },
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
+        if (!features || typeof features !== 'object') {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Please provide valid features object' 
+            });
+        }
+
+        // Get the current school document
+        const school = await School.findById(req.params.id);
 
         if (!school) {
-            return res.status(404).json({ success: false, message: `School not found with id of ${req.params.id}` });
+            return res.status(404).json({ 
+                success: false, 
+                message: `School not found with id of ${req.params.id}` 
+            });
         }
+
+        // Merge existing features with new features
+        // This preserves features that aren't being updated
+        school.features = {
+            ...school.features.toObject(), // Convert Mongoose subdocument to plain object
+            ...features // Override with new values
+        };
+
+        // Save the school document
+        await school.save();
 
         res.status(200).json({ success: true, data: school });
     } catch (error) {
